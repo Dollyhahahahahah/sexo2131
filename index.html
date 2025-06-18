@@ -30,7 +30,8 @@
         
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+            width: 100%;
         }
         
         .header h1 {
@@ -39,6 +40,33 @@
             text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
             color: white;
             letter-spacing: 2px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 500px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
         }
         
         .game-area {
@@ -382,11 +410,24 @@
         .hidden {
             display: none !important;
         }
+        
+        .win { color: #4CAF50; }
+        .loss { color: #FF5252; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>UNO Simplificado</h1>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value win" id="wins">0</div>
+                <div class="stat-label">Vitórias</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value loss" id="losses">0</div>
+                <div class="stat-label">Derrotas</div>
+            </div>
+        </div>
     </div>
     
     <div class="game-area">
@@ -447,6 +488,12 @@
             gameOver: false
         };
         
+        // Estatísticas
+        let stats = {
+            wins: 0,
+            losses: 0
+        };
+        
         // Elementos DOM
         const playersContainer = document.getElementById('players-container');
         const handElement = document.getElementById('hand');
@@ -457,9 +504,14 @@
         const colorSelectorElement = document.getElementById('color-selector');
         const unoButton = document.getElementById('uno-button');
         const restartButton = document.getElementById('restart-button');
+        const winsElement = document.getElementById('wins');
+        const lossesElement = document.getElementById('losses');
         
         // Inicialização do jogo
         function initGame() {
+            // Carregar estatísticas
+            loadStats();
+            
             // Resetar estado do jogo
             gameState = {
                 deck: [],
@@ -485,6 +537,26 @@
             startGame();
             
             updateUI();
+        }
+        
+        // Carregar estatísticas do localStorage
+        function loadStats() {
+            const savedStats = localStorage.getItem('unoStats');
+            if (savedStats) {
+                stats = JSON.parse(savedStats);
+            }
+            updateStatsDisplay();
+        }
+        
+        // Salvar estatísticas no localStorage
+        function saveStats() {
+            localStorage.setItem('unoStats', JSON.stringify(stats));
+        }
+        
+        // Atualizar exibição das estatísticas
+        function updateStatsDisplay() {
+            winsElement.textContent = stats.wins;
+            lossesElement.textContent = stats.losses;
         }
         
         // Criar o baralho
@@ -695,7 +767,7 @@
                 
                 // Verificar vitória
                 if (player.hand.length === 0) {
-                    endGame(`${player.name} venceu!`);
+                    endGame(`${player.name} venceu!`, true);
                     return;
                 }
                 
@@ -796,7 +868,7 @@
             
             // Verificar vitória
             if (ai.hand.length === 0) {
-                endGame(`${ai.name} venceu!`);
+                endGame(`${ai.name} venceu!`, false);
                 return;
             }
             
@@ -885,9 +957,20 @@
         }
         
         // Finalizar jogo
-        function endGame(message) {
+        function endGame(message, isWin) {
             gameState.gameOver = true;
-            showMessage(message);
+            
+            // Atualizar estatísticas
+            if (isWin) {
+                stats.wins++;
+                showMessage(`🎉 ${message} 🎉`);
+            } else {
+                stats.losses++;
+                showMessage(message);
+            }
+            
+            saveStats();
+            updateStatsDisplay();
         }
         
         // Event listeners
