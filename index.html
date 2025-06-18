@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNO Simplificado</title>
+    <style>
+        :root {
+            --vermelho: #FF5252;
+            --verde: #4CAF50;
+            --azul: #2196F3;
+            --amarelo: #FFEB3B;
+            --preto: #212121;
+            --branco: #FFFFFF;
+            --fundo: #2E7D32;
+            --sombra: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--fundo);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 3em;
+            text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+            color: white;
+            letter-spacing: 2px;
+        }
+        
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: var(--sombra);
+        }
+        
+        .play-area {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .deck, .discard-pile {
+            width: 120px;
+            height: 180px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: var(--sombra);
+            transition: transform 0.3s ease;
+        }
+        
+        .deck {
+            background: linear-gradient(135deg, rgba(0,0,0,0.1), rgba(0,0,0,0.3));
+            cursor: pointer;
+            border: 2px dashed rgba(255,255,255,0.2);
+        }
+        
+        .deck:hover {
+            transform: scale(1.05) rotate(-5deg);
+        }
+        
+        .deck::after {
+            content: "UNO";
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            opacity: 0.8;
+        }
+        
+        .discard-pile {
+            background-color: white;
+            transform-style: preserve-3d;
+        }
+        
+        .card {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 2em;
+            position: absolute;
+            backface-visibility: hidden;
+            transition: all 0.5s ease;
+        }
+        
+        .card-front {
+            transform: rotateY(0deg);
+        }
+        
+        .card-back {
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, #e0e0e0, #bdbdbd);
+            color: var(--preto);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+        }
+        
+        .card-value {
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+        
+        .players-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        
+        .player {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            width: 28%;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: var(--sombra);
+            position: relative;
+        }
+        
+        .player.active {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-10px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+        
+        .player.active::after {
+            content: "⬇️";
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+        }
+        
+        .player-name {
+            font-weight: bold;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            color: white;
+        }
+        
+        .player-cards {
+            font-size: 1em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .cards-count {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .hand {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            width: 90%;
+            margin: 0 auto;
+            min-height: 180px;
+        }
+        
+        .hand-card {
+            width: 80px;
+            height: 120px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: var(--sombra);
+            transform-style: preserve-3d;
+        }
+        
+        .hand-card:hover {
+            transform: translateY(-15px) rotate(5deg) scale(1.1);
+            z-index: 10;
+        }
+        
+        .hand-card .card-front {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            backface-visibility: hidden;
+        }
+        
+        .hand-card .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backface-visibility: hidden;
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, #e0e0e0, #bdbdbd);
+            border-radius: 8px;
+        }
+        
+        .red { background-color: var(--vermelho); }
+        .green { background-color: var(--verde); color: white; }
+        .blue { background-color: var(--azul); color: white; }
+        .yellow { background-color: var(--amarelo); color: #333; }
+        .black { background-color: var(--preto); color: white; }
+        
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 1.3em;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -40%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+        
+        .color-selector {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .color-selector h3 {
+            margin: 0 0 20px 0;
+            color: white;
+            font-size: 1.5em;
+        }
+        
+        .color-options {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .color-option {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--sombra);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+        }
+        
+        .color-option:hover {
+            transform: scale(1.1) rotate(10deg);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .uno-button {
+            background: linear-gradient(135deg, #FF5252, #FF1744);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .uno-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .uno-button:active {
+            transform: scale(0.98);
+        }
+        
+        .restart-button {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 30px;
+            transition: all 0.3s ease;
+            box-shadow: var(--sombra);
+        }
+        
+        .restart-button:hover {
+            transform: scale(1.05);
+            background: linear-gradient(135deg, #1976D2, #0D47A1);
+        }
+        
+        @keyframes cardPlayed {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        
+        .card-played {
+            animation: cardPlayed 0.5s ease;
+        }
+        
+        @keyframes cardDraw {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-100px) rotate(360deg); }
+        }
+        
+        .card-draw {
+            animation: cardDraw 0.5s ease forwards;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>UNO Simplificado</h1>
+    </div>
+    
+    <div class="game-area">
+        <div class="players-container" id="players-container">
+            <!-- Jogadores serão adicionados dinamicamente -->
+        </div>
+        
+        <div class="play-area">
+            <div class="deck" id="deck"></div>
+            <div class="discard-pile" id="discard-pile">
+                <div class="card card-front" id="current-card"></div>
+                <div class="card card-back">UNO</div>
+            </div>
+        </div>
+        
+        <div class="hand" id="hand">
+            <!-- Cartas do jogador serão adicionadas dinamicamente -->
+        </div>
+        
+        <button class="uno-button" id="uno-button">Gritar UNO!</button>
+        <button class="restart-button" id="restart-button">Reiniciar Jogo</button>
+    </div>
+    
+    <div class="message" id="message"></div>
+    
+    <div class="color-selector" id="color-selector">
+        <h3>Escolha uma cor:</h3>
+        <div class="color-options">
+            <div class="color-option red" data-color="red">🔴</div>
+            <div class="color-option green" data-color="green">🟢</div>
+            <div class="color-option blue" data-color="blue">🔵</div>
+            <div class="color-option yellow" data-color="yellow">🟡</div>
+        </div>
+    </div>
+
+    <script>
+        // Constantes do jogo
+        const COLORS = ['red', 'green', 'blue', 'yellow'];
+        const VALUES = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Pular', 'Inverter', '+2'];
+        const SPECIALS = ['Coringa', '+4'];
+        
+        // Estado do jogo
+        let gameState = {
+            deck: [],
+            discardPile: [],
+            players: [
+                { name: 'Você', hand: [], isHuman: true },
+                { name: 'CPU 1', hand: [], isHuman: false },
+                { name: 'CPU 2', hand: [], isHuman: false }
+            ],
+            currentPlayer: 0,
+            direction: 1,
+            currentColor: '',
+            currentValue: '',
+            drawCount: 0,
+            waitingForColor: false,
+            unoCalled: false,
+            gameOver: false
+        };
+        
+        // Elementos DOM
+        const playersContainer = document.getElementById('players-container');
+        const handElement = document.getElementById('hand');
+        const discardPileElement = document.getElementById('discard-pile');
+        const currentCardElement = document.getElementById('current-card');
+        const deckElement = document.getElementById('deck');
+        const messageElement = document.getElementById('message');
+        const colorSelectorElement = document.getElementById('color-selector');
+        const unoButton = document.getElementById('uno-button');
+        const restartButton = document.getElementById('restart-button');
+        
+        // Inicialização do jogo
+        function initGame() {
+            // Resetar estado do jogo
+            gameState = {
+                deck: [],
+                discardPile: [],
+                players: [
+                    { name: 'Você', hand: [], isHuman: true },
+                    { name: 'CPU 1', hand: [], isHuman: false },
+                    { name: 'CPU 2', hand: [], isHuman: false }
+                ],
+                currentPlayer: 0,
+                direction: 1,
+                currentColor: '',
+                currentValue: '',
+                drawCount: 0,
+                waitingForColor: false,
+                unoCalled: false,
+                gameOver: false
+            };
+            
+            createDeck();
+            shuffleDeck();
+            dealCards();
+            startGame();
+            
+            updateUI();
+        }
+        
+        // Criar o baralho
+        function createDeck() {
+            gameState.deck = [];
+            
+            // Cartas normais
+            COLORS.forEach(color => {
+                VALUES.forEach(value => {
+                    const count = value === '0' ? 1 : 2;
+                    for (let i = 0; i < count; i++) {
+                        gameState.deck.push({ color, value, id: `${color}_${value}_${i}` });
+                    }
+                });
+            });
+            
+            // Cartas especiais
+            for (let i = 0; i < 4; i++) {
+                gameState.deck.push({ color: 'black', value: 'Coringa', id: `wild_${i}` });
+                gameState.deck.push({ color: 'black', value: '+4', id: `wild4_${i}` });
+            }
+        }
+        
+        // Embaralhar o baralho
+        function shuffleDeck() {
+            for (let i = gameState.deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [gameState.deck[i], gameState.deck[j]] = [gameState.deck[j], gameState.deck[i]];
+            }
+        }
+        
+        // Distribuir cartas
+        function dealCards() {
+            for (let i = 0; i < 7; i++) {
+                gameState.players.forEach(player => {
+                    const card = drawCardFromDeck();
+                    if (card) player.hand.push(card);
+                });
+            }
+        }
+        
+        // Comprar carta do baralho
+        function drawCardFromDeck() {
+            if (gameState.deck.length === 0) {
+                if (gameState.discardPile.length <= 1) {
+                    endGame('Fim do jogo - sem cartas para comprar');
+                    return null;
+                }
+                
+                const lastCard = gameState.discardPile.pop();
+                gameState.deck = [...gameState.discardPile];
+                gameState.discardPile = [lastCard];
+                shuffleDeck();
+                showMessage('Baralho reciclado!');
+            }
+            return gameState.deck.pop();
+        }
+        
+        // Iniciar o jogo
+        function startGame() {
+            // Primeira carta não pode ser especial
+            let firstCard;
+            do {
+                firstCard = drawCardFromDeck();
+                if (!firstCard) return;
+            } while (firstCard.color === 'black');
+            
+            gameState.discardPile.push(firstCard);
+            gameState.currentColor = firstCard.color;
+            gameState.currentValue = firstCard.value;
+            
+            updateCurrentCard();
+            updateUI();
+            
+            if (!gameState.players[0].isHuman) {
+                setTimeout(aiTurn, 1500);
+            }
+        }
+        
+        // Atualizar a interface
+        function updateUI() {
+            updatePlayersDisplay();
+            updateHand();
+            updateCurrentCard();
+        }
+        
+        // Atualizar display dos jogadores
+        function updatePlayersDisplay() {
+            playersContainer.innerHTML = '';
+            
+            gameState.players.forEach((player, index) => {
+                const playerElement = document.createElement('div');
+                playerElement.className = `player ${index === gameState.currentPlayer ? 'active' : ''}`;
+                
+                const nameElement = document.createElement('div');
+                nameElement.className = 'player-name';
+                nameElement.textContent = player.name;
+                
+                const cardsElement = document.createElement('div');
+                cardsElement.className = 'player-cards';
+                
+                const countElement = document.createElement('div');
+                countElement.className = 'cards-count';
+                countElement.textContent = player.hand.length;
+                
+                const textElement = document.createElement('div');
+                textElement.textContent = player.hand.length === 1 ? 'carta' : 'cartas';
+                
+                cardsElement.appendChild(countElement);
+                cardsElement.appendChild(textElement);
+                
+                playerElement.appendChild(nameElement);
+                playerElement.appendChild(cardsElement);
+                playersContainer.appendChild(playerElement);
+            });
+        }
+        
+        // Atualizar mão do jogador
+        function updateHand() {
+            handElement.innerHTML = '';
+            
+            if (gameState.currentPlayer !== 0 || gameState.gameOver) return;
+            
+            const player = gameState.players[0];
+            
+            player.hand.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = `hand-card ${card.color}`;
+                cardElement.dataset.index = index;
+                
+                const cardFront = document.createElement('div');
+                cardFront.className = 'card-front';
+                cardFront.textContent = card.value;
+                
+                const cardBack = document.createElement('div');
+                cardBack.className = 'card-back';
+                cardBack.textContent = 'UNO';
+                
+                cardElement.appendChild(cardFront);
+                cardElement.appendChild(cardBack);
+                
+                if (canPlayCard(card)) {
+                    cardElement.addEventListener('click', () => playCard(index));
+                } else {
+                    cardElement.style.opacity = '0.6';
+                }
+                
+                handElement.appendChild(cardElement);
+            });
+            
+            // Mostrar/ocultar botão UNO
+            unoButton.style.display = (player.hand.length === 1 && !gameState.unoCalled) ? 'block' : 'none';
+        }
+        
+        // Atualizar carta atual
+        function updateCurrentCard() {
+            const card = gameState.discardPile[gameState.discardPile.length - 1];
+            if (!card) return;
+            
+            currentCardElement.className = `card card-front ${card.color}`;
+            currentCardElement.textContent = card.value;
+            currentCardElement.classList.add('card-played');
+            
+            setTimeout(() => {
+                currentCardElement.classList.remove('card-played');
+            }, 500);
+        }
+        
+        // Verificar se carta pode ser jogada
+        function canPlayCard(card) {
+            if (gameState.waitingForColor || gameState.gameOver) return false;
+            
+            return card.color === 'black' || 
+                   card.color === gameState.currentColor || 
+                   card.value === gameState.currentValue;
+        }
+        
+        // Jogar carta
+        function playCard(cardIndex) {
+            if (gameState.gameOver || gameState.currentPlayer !== 0) return;
+            
+            const player = gameState.players[0];
+            const card = player.hand[cardIndex];
+            
+            if (!card || !canPlayCard(card)) {
+                showMessage('Carta inválida!');
+                return;
+            }
+            
+            // Animação da carta sendo jogada
+            const cardElement = handElement.children[cardIndex];
+            cardElement.style.transform = 'translateY(-100px) rotate(360deg)';
+            cardElement.style.opacity = '0';
+            cardElement.style.transition = 'all 0.5s ease';
+            
+            setTimeout(() => {
+                // Remover carta da mão
+                player.hand.splice(cardIndex, 1);
+                
+                // Adicionar ao descarte
+                gameState.discardPile.push(card);
+                
+                // Atualizar cor e valor
+                if (card.color !== 'black') {
+                    gameState.currentColor = card.color;
+                }
+                gameState.currentValue = card.value;
+                
+                // Verificar vitória
+                if (player.hand.length === 0) {
+                    endGame(`${player.name} venceu!`);
+                    return;
+                }
+                
+                // Ações especiais
+                applyCardEffects(card);
+                
+                // Se for coringa, pedir cor
+                if (card.color === 'black') {
+                    gameState.waitingForColor = true;
+                    showColorSelector();
+                    return;
+                }
+                
+                // Próximo jogador
+                nextPlayer();
+            }, 500);
+        }
+        
+        // Comprar carta
+        function drawCard() {
+            if (gameState.waitingForColor || gameState.currentPlayer !== 0 || gameState.gameOver) return;
+            
+            const player = gameState.players[0];
+            const card = drawCardFromDeck();
+            
+            if (!card) return;
+            
+            // Adicionar carta à mão
+            player.hand.push(card);
+            
+            // Verificar se pode jogar
+            if (!canPlayCard(card)) {
+                showMessage('Você comprou uma carta');
+                nextPlayer();
+            } else {
+                showMessage('Você comprou uma carta jogável!');
+            }
+            
+            updateUI();
+        }
+        
+        // Turno da IA
+        function aiTurn() {
+            if (gameState.gameOver) return;
+            
+            const ai = gameState.players[gameState.currentPlayer];
+            
+            // Comprar cartas se necessário
+            if (gameState.drawCount > 0) {
+                for (let i = 0; i < gameState.drawCount; i++) {
+                    const card = drawCardFromDeck();
+                    if (card) ai.hand.push(card);
+                }
+                showMessage(`${ai.name} comprou ${gameState.drawCount} cartas!`);
+                gameState.drawCount = 0;
+                nextPlayer();
+                return;
+            }
+            
+            // Encontrar carta jogável
+            let playableIndex = -1;
+            for (let i = 0; i < ai.hand.length; i++) {
+                if (canPlayCard(ai.hand[i])) {
+                    playableIndex = i;
+                    break;
+                }
+            }
+            
+            // Se não tiver, comprar
+            if (playableIndex === -1) {
+                const card = drawCardFromDeck();
+                if (!card) return;
+                
+                ai.hand.push(card);
+                showMessage(`${ai.name} comprou uma carta`);
+                
+                // Verificar se pode jogar a carta comprada
+                if (canPlayCard(card)) {
+                    playableIndex = ai.hand.length - 1;
+                } else {
+                    nextPlayer();
+                    return;
+                }
+            }
+            
+            // Jogar a carta
+            const card = ai.hand[playableIndex];
+            ai.hand.splice(playableIndex, 1);
+            gameState.discardPile.push(card);
+            
+            // Atualizar cor e valor
+            if (card.color !== 'black') {
+                gameState.currentColor = card.color;
+            }
+            gameState.currentValue = card.value;
+            
+            showMessage(`${ai.name} jogou uma carta`);
+            
+            // Verificar vitória
+            if (ai.hand.length === 0) {
+                endGame(`${ai.name} venceu!`);
+                return;
+            }
+            
+            // Ações especiais
+            applyCardEffects(card);
+            
+            // Se for coringa, escolher cor
+            if (card.color === 'black') {
+                const colors = COLORS.filter(c => c !== 'black');
+                gameState.currentColor = colors[Math.floor(Math.random() * colors.length)];
+                showMessage(`${ai.name} escolheu ${gameState.currentColor}`);
+            }
+            
+            // Próximo jogador
+            nextPlayer();
+        }
+        
+        // Aplicar efeitos de cartas especiais
+        function applyCardEffects(card) {
+            switch (card.value) {
+                case 'Pular':
+                    showMessage('Próximo jogador perde a vez!');
+                    nextPlayer();
+                    break;
+                    
+                case 'Inverter':
+                    showMessage('Sentido invertido!');
+                    gameState.direction *= -1;
+                    break;
+                    
+                case '+2':
+                    showMessage('Próximo jogador compra 2!');
+                    gameState.drawCount += 2;
+                    break;
+                    
+                case '+4':
+                    showMessage('Próximo jogador compra 4!');
+                    gameState.drawCount += 4;
+                    break;
+            }
+        }
+        
+        // Próximo jogador
+        function nextPlayer() {
+            gameState.currentPlayer = (gameState.currentPlayer + gameState.direction + gameState.players.length) % gameState.players.length;
+            gameState.unoCalled = false;
+            gameState.waitingForColor = false;
+            
+            updateUI();
+            
+            // Se for IA, jogar após delay
+            if (!gameState.players[gameState.currentPlayer].isHuman) {
+                setTimeout(aiTurn, 1500);
+            }
+        }
+        
+        // Mostrar mensagem
+        function showMessage(text) {
+            messageElement.textContent = text;
+            messageElement.style.display = 'block';
+            
+            setTimeout(() => {
+                messageElement.style.display = 'none';
+            }, 2000);
+        }
+        
+        // Mostrar seletor de cor
+        function showColorSelector() {
+            colorSelectorElement.style.display = 'flex';
+        }
+        
+        // Escolher cor
+        function chooseColor(color) {
+            gameState.currentColor = color;
+            colorSelectorElement.style.display = 'none';
+            gameState.waitingForColor = false;
+            
+            nextPlayer();
+        }
+        
+        // Chamar UNO
+        function callUno() {
+            gameState.unoCalled = true;
+            showMessage('UNO!');
+            unoButton.style.display = 'none';
+        }
+        
+        // Finalizar jogo
+        function endGame(message) {
+            gameState.gameOver = true;
+            showMessage(message);
+        }
+        
+        // Event listeners
+        deckElement.addEventListener('click', drawCard);
+        unoButton.addEventListener('click', callUno);
+        restartButton.addEventListener('click', initGame);
+        
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', () => {
+                chooseColor(option.dataset.color);
+            });
+        });
+        
+        // Iniciar o jogo
+        initGame();
+    </script>
+</body>
+</html>
